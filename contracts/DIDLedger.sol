@@ -38,7 +38,7 @@ contract DIDLedger is DIDStorage {
         returns(string memory did)
     {
         //1-1-2. 사용가능한 did가 존재하지 않으면, did 생성 및 did문서 생성
-        userInfo = '6f4303aa6cea2b0fae462fa9cc792443c03a0609';
+        //userInfo = '6f4303aa6cea2b0fae462fa9cc792443c03a0609';
         did = DIDUtils.genDid(userInfo);
         string memory keyID = DIDUtils.genPublicKeyID(did,1);
         string memory addrKey = DIDUtils.genAddrKey(msg.sender);
