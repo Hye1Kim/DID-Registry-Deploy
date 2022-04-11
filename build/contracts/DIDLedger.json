@@ -10907,12 +10907,12 @@
     "1001": {
       "events": {},
       "links": {
-        "DIDUtils": "0x6b214e23965c043346a580099d31759e95decaa5"
+        "DIDUtils": "0x37a97e9f19870bf6445fce18706a472241255183"
       },
-      "address": "0xd0f77339dc7f5599e3029ad54fc35f914d46a021",
-      "transactionHash": "0xab6d5238eab90e899d691e3191f54632f5b895a16cdbd09e3a5934e878340299"
+      "address": "0xeaef75fa84d04eb4bef10a82b23bb99e78e47eeb",
+      "transactionHash": "0x8eda0c2463565b2a8b7684ba2533a8a95bb58feeb9876318c220526d31d4c60e"
     }
   },
   "schemaVersion": "2.0.2",
-  "updatedAt": "2022-04-10T12:02:45.425Z"
+  "updatedAt": "2022-04-11T07:47:32.109Z"
 }
