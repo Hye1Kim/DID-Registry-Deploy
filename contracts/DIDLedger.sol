@@ -16,7 +16,13 @@ contract DIDLedger is DIDStorage {
         string memory did = DIDUtils.genDid(userInfo);
 //#orign        string memory did = DIDUtils.genDid(msg.sender);
         //1-1-1. 사용가능한 did가 이미 존재하면, 사용자 신원인증 값 요구 **
-        require(didState[did] == DIDState.None,"Already Document");
+        require(didState[did] == DIDState.None,"Already Exists Document");
+        _;
+    }
+    
+    modifier recheckExistDom(string memory userInfo){
+        string memory did = DIDUtils.genDid(userInfo);
+        require(didState[did] == DIDState.Active,"None or Deactivated");
         _;
     }
 
@@ -25,15 +31,28 @@ contract DIDLedger is DIDStorage {
         _;
     }
 
+    modifier checkExistAddr(string memory did,address addr_){//중복된 pubkey있는지 확인 
+        Document memory dom = documents[did];
+        string memory addr = DIDUtils.genAddrKey(addr_);
+        //uint256 dup = 0
+        for(uint256 i=0;i<dom.publicKeys.length;i++){
+            require(keccak256(bytes(dom.publicKeys[i].pubKeyData)) != keccak256(bytes(addr)),'Already Exists Address');
+            _;
+        }
+    }
+
     modifier verifyFormat(string memory did){
         require(DIDUtils.verifyDidFormat(did),'Invalid format');
         _;
     }
+
+
     
     // 1. did 및 did문서 생성
     // 1-1. did 존재 유무 검사 checkExistDom 
     function create(
-        string memory userInfo) public 
+        string memory userInfo,
+        address addr) public 
         checkExistDom(userInfo)
         returns(string memory did)
     {
@@ -41,7 +60,7 @@ contract DIDLedger is DIDStorage {
         //userInfo = '6f4303aa6cea2b0fae462fa9cc792443c03a0609';
         did = DIDUtils.genDid(userInfo);
         string memory keyID = DIDUtils.genPublicKeyID(did,1);
-        string memory addrKey = DIDUtils.genAddrKey(msg.sender);
+        string memory addrKey = DIDUtils.genAddrKey(addr);
         string memory keyType = 'EcdsaSecp256k1RecoveryMethod2020';
         PublicKey memory defaultKey = PublicKey(keyID,keyType,addrKey,false);
                                    // https://www.w3.org/ns/did -> 확인해보기 
@@ -49,6 +68,7 @@ contract DIDLedger is DIDStorage {
         documents[did].id = did;
         documents[did].publicKeys.push(defaultKey);
         didState[did] = DIDState.Active;
+        idType[did] = IdType.User;
     }
 
     function getDocument(string memory did) public view 
@@ -69,37 +89,43 @@ contract DIDLedger is DIDStorage {
     //'EcdsaSecp256k1VerificationKey2019'
 
     function addPubKey(
-        string memory did,
-        string memory pubKey) public 
+        string memory userInfo,
+        address addr) public 
+        recheckExistDom(userInfo)
     {
-        _addPubKey(did,pubKey);        
+        string memory did = DIDUtils.genDid(userInfo);
+        _addPubKey(did,addr);        
     }
     
     
     function _addPubKey(
         string memory did,
-        string memory pubKey) internal 
-        verifyFormat(did) checkActiveDom(did)
+        address addr) internal 
+        verifyFormat(did) checkActiveDom(did) checkExistAddr(did,addr)
+        returns(string memory)
     {
         uint256 index = documents[did].publicKeys.length;
         string memory keyID = DIDUtils.genPublicKeyID(did,index+1);
         string memory keyType = 'EcdsaSecp256k1VerificationKey2019';
-        documents[did].publicKeys.push(PublicKey(keyID,keyType,pubKey,false));
+        string memory keyAddr = DIDUtils.genAddrKey(addr);
+        documents[did].publicKeys.push(PublicKey(keyID,keyType,keyAddr,false));
     }
     
     //'EcdsaSecp256k1RecoveryMethod2020'
     
     function addAddrKey(
-        string memory did,
-        address addr) public
+        string memory userInfo,
+        address addr) public 
+        recheckExistDom(userInfo)
     {
-        _addAddrKey(did,addr);    
+        string memory did = DIDUtils.genDid(userInfo);
+        _addAddrKey(did,addr);        
     }
    
     function _addAddrKey(
         string memory did,
         address addr) internal 
-        verifyFormat(did) checkActiveDom(did)
+        verifyFormat(did) checkActiveDom(did) checkExistAddr(did,addr)
     {
         uint256 index = documents[did].publicKeys.length;
         string memory keyID = DIDUtils.genPublicKeyID(did,index+1);
@@ -109,26 +135,42 @@ contract DIDLedger is DIDStorage {
     }
 
     // add service
-    function addService(
-        string memory did,
-        string memory scvID,
-        string memory scvType,
-        string memory scvEndpoint) public 
+    function createSvc(
+        string memory svcInfo,
+        string memory endPoint,
+        string memory svcType,
+        address addr) public 
     {
-        _addService(did, scvID, scvType, scvEndpoint);    
+        _createSvc(svcInfo,endPoint,svcType,addr);    
     }
 
 
-    function _addService(
-        string memory did,
-        string memory scvID,
-        string memory scvType,
-        string memory scvEndpoint)internal 
-        verifyFormat(did) checkActiveDom(did)
+    function _createSvc(
+        string memory svcInfo,
+        string memory endPoint,
+        string memory svcType,
+        address addr) internal 
+        checkExistDom(svcInfo)
+        returns(string memory svcId)
     {
-        string memory id =  DIDUtils.genFragment(did,scvID);
-        //documents[did].services.push(Service(id,scvType,scvEndpoint,false));
+        svcId = DIDUtils.genDid(svcInfo);
+        string memory keyID = DIDUtils.genPublicKeyID(svcId,1);
+        string memory addrKey = DIDUtils.genAddrKey(addr);
+        string memory keyType = 'EcdsaSecp256k1RecoveryMethod2020';
+        PublicKey memory defaultKey = PublicKey(keyID,keyType,addrKey,false);
+        documents[svcId].id = svcId;
+        documents[svcId].contexts.push("https://www.w3.org/ns/did/v1");
+        documents[svcId].publicKeys.push(defaultKey);
+        documents[svcId].svcEndPoint=endPoint;
+        documents[svcId].svcType=svcType;
+        idType[svcId] = IdType.Service;
+        didState[svcId] = DIDState.Active;
     }
+
+
+    //delete publickey did serviceDID
+
+
 
 
     function recoverSignature(
@@ -144,3 +186,5 @@ contract DIDLedger is DIDStorage {
     }
 
 }
+
+//수정본

@@ -4,18 +4,18 @@ pragma experimental ABIEncoderV2;
 library DIDUtils{
     
     // "did:kt:6f4303aa6cea2b0fae462fa9cc792443c03a0609"
+    // "did:kt:2f0287f661aa87ee5d811fac157cbbe4f6cff8f04bffe26914f224d358b07159"
     function verifyDidFormat(string memory did) public pure 
         returns(bool)
     {
         bytes memory data = bytes(did);
-        if(data.length != 47) return false;
+        if(data.length != 71) return false;
         bytes memory prefix = bytes("did:kt:");
         bytes memory dataPrefix = _slice(data,0,prefix.length);
-        bytes memory addressBytes = _fromHex(string(_slice(data,prefix.length,40)));
+        bytes memory userInfoBytes = _fromHex(string(_slice(data,prefix.length,64)));
         if(!_equal(prefix, dataPrefix)) return false; //did 형식 확인
-        return (addressBytes.length == 20);
+        return (userInfoBytes.length == 32);//addressBytes.length == 20);
     }
-    
     
     function verifyOwners(
         string memory did, 
@@ -35,9 +35,10 @@ library DIDUtils{
     */
 
     //userInfo : did서버에서 사용자 정보를 해시해서 넘겨준 값 
+    // 6f4303aa6cea2b0fae462fa9cc792443c03a0609
     function genDid(string memory userInfo) public pure returns(string memory)
     {
-        return string(abi.encodePacked('did:kt:',userInfo));
+        return string(abi.encodePacked('did:kt:',userInfo)); //32byte 미만 으로 해야함 
     }
     
     

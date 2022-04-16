@@ -1,4 +1,4 @@
-pragma solidity 0.5.6;
+pragma solidity >=0.4.24 <=0.5.6;
 
 contract DIDStorage{
 
@@ -35,9 +35,11 @@ contract DIDStorage{
 
     mapping(string => Document) documents;
     mapping(string => DIDState) didState;
+    mapping(string => IdType) idType;
     mapping(string => uint) public nonce;
     
     enum DIDState {None, Active, Deactivated}
+    enum IdType { User, Service }
 
     struct PublicKey{
         string id;
@@ -45,7 +47,7 @@ contract DIDStorage{
         string pubKeyData;
         bool disable;
     }
-    
+    /*
     struct Service{
         string id;
         string serviceType;
@@ -53,11 +55,14 @@ contract DIDStorage{
         PublicKey[] publickeys;
         bool disable;
     }
+    */
     
     struct Document{
         string id;
         string[] contexts;  //"https://www.w3.org/ns/did/v1" 왜 배열이야 ?
         PublicKey[] publicKeys;
+        string svcType; //svc 인경우
+        string svcEndPoint; //svc 인경우
         string[] credentials;
     }
 
