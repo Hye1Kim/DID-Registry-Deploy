@@ -48,6 +48,20 @@ contract DIDLedger is DIDStorage {
 
 
     
+    function create_view(
+        string memory userInfo) public view
+        returns(Document memory)
+    {
+        string memory did = DIDUtils.genDid(userInfo);
+        Document memory dom = documents[did];
+        // for(uint256 i=0;i<dom.publicKeys.length;i++){
+        //     if(dom.publicKeys[i].disable) delete dom.publicKeys[i];
+        // }
+        return dom;
+
+
+    }
+
     // 1. did 및 did문서 생성
     // 1-1. did 존재 유무 검사 checkExistDom 
     function create(
